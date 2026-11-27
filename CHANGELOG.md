@@ -4,6 +4,18 @@ Licensed under the MIT License.
 -->
 # Changelog
 
+## 0.2.0
+
+- `scripts/vlm_benchmark.py`: every run, warmup included, now sets
+  `min_length` to prompt length + `max_tokens`, so end-of-sequence can no longer
+  end a run early.
+- The script fails before the first run when prompt length + `max_tokens`
+  exceeds `max_length`, and fails any run whose generated-token count differs
+  from `max_tokens`.
+- Effect on reported numbers: runs that previously stopped early are no longer
+  possible, so `avg_tokens_per_run` always equals `max_tokens` and the decode
+  statistics always have `max_tokens - 1` samples per run.
+
 ## 0.1.0
 
 - Initial import of `scripts/vlm_benchmark.py`.

@@ -39,7 +39,7 @@ decode statistics have N - 1 samples. These are two different quantities.
 |---|---|
 | `model_benchmark` | Sets `min_length` to prompt length + N, so end-of-sequence is suppressed |
 | `benchmark_multimodal.py` | Sets `min_length` to `max_length`, so end-of-sequence is suppressed |
-| `scripts/vlm_benchmark.py` | No minimum length is set. The loop stops when the generator reports done, so a run can end early without any error. |
+| `scripts/vlm_benchmark.py` | Sets `min_length` to prompt length + `max_tokens` (warmup included), fails before the run if that exceeds `max_length`, and fails a run that generated a different number of tokens than `max_tokens`. |
 | `engine_benchmark` | Fails the whole case when a turn finishes early, unless `ENGINE_BENCH_MIN_TOKENS=1`, which sets a minimum generated-token count on every turn |
 
 ## Time to first token
@@ -64,8 +64,10 @@ be maintained in this repository or added to `engine_benchmark`.
 
 ## Open items
 
-- `scripts/vlm_benchmark.py`: force the minimum generated length and assert
-  that `avg_tokens_per_run` equals `max_tokens`.
+- `min_length` only masks the end-of-sequence tokens listed in the model
+  config. Every model used for measurement must list all of its stop tokens
+  there; the generated-token check in `scripts/vlm_benchmark.py` catches a
+  model that does not.
 - `engine_benchmark`: report the mean inter-token latency and have the
   consumer read it; `avg_tokens_per_run` should be a measured value.
 - Define one TTFT interval and report the others as separate fields.

@@ -301,6 +301,40 @@ def process_inputs(
     return processor(prompt, images=images)
 
 
+def make_generator_params(
+    model: og.Model, inputs, max_tokens: int, max_length: int
+) -> og.GeneratorParams:
+    """Build generator parameters that force exactly *max_tokens* generated tokens.
+
+    ``min_length`` is a floor on the total sequence length, prompt included, and
+    only masks the end-of-sequence tokens listed in the model config. Setting it
+    to prompt length + max_tokens keeps a run from ending early; the decode loop
+    provides the upper bound.
+    """
+    if "input_ids" not in inputs.keys():
+        raise RuntimeError("Processor output has no input_ids; cannot derive min_length")
+    input_ids = inputs["input_ids"]
+    shape = input_ids.shape()
+    prompt_length = shape[1] if len(shape) > 1 else shape[0]
+    min_length = prompt_length + max_tokens
+    if min_length > max_length:
+        raise ValueError(
+            f"prompt length {prompt_length} + max_tokens {max_tokens} exceeds "
+            f"max_length {max_length}"
+        )
+    params = og.GeneratorParams(model)
+    params.set_search_options(max_length=max_length, min_length=min_length)
+    return params
+
+
+def require_full_generation(result: "BenchmarkResult", max_tokens: int) -> None:
+    """Fail the run when it produced fewer or more than *max_tokens* tokens."""
+    if result.total_tokens_generated != max_tokens:
+        raise RuntimeError(
+            f"Run generated {result.total_tokens_generated} tokens, expected {max_tokens}"
+        )
+
+
 def run_single_benchmark(
     model: og.Model,
     processor: og.MultiModalProcessor,
@@ -341,8 +375,7 @@ def run_single_benchmark(
         )
 
     # Setup generator
-    params = og.GeneratorParams(model)
-    params.set_search_options(max_length=max_length)
+    params = make_generator_params(model, inputs, max_tokens, max_length)
 
     generator = og.Generator(model, params)
 
@@ -364,6 +397,7 @@ def run_single_benchmark(
 
     if generator.is_done():
         del generator
+        require_full_generation(result, max_tokens)
         generated_text = "".join(generated_tokens) if verbose else ""
         return result, generated_text
 
@@ -381,6 +415,7 @@ def run_single_benchmark(
             generated_tokens.append(stream.decode(new_token))
 
     del generator
+    require_full_generation(result, max_tokens)
     generated_text = "".join(generated_tokens) if verbose else ""
     return result, generated_text
 
@@ -401,8 +436,7 @@ def run_warmup(
 
     for i in range(num_iterations):
         inputs = process_inputs(processor, prompt, images)
-        params = og.GeneratorParams(model)
-        params.set_search_options(max_length=max_length)
+        params = make_generator_params(model, inputs, max_tokens, max_length)
 
         generator = og.Generator(model, params)
         generator.set_inputs(inputs)

@@ -13,8 +13,7 @@ Licensed under the MIT License.
 - Local changes against that revision:
   - One code comment that listed model-family names now reads "Works for any
     model that ships a chat template."
-- Behavior is otherwise unchanged. Later behavior changes are listed in
-  `CHANGELOG.md`.
+- Later behavior changes are listed in `CHANGELOG.md`.
 
 ## OGA tools used as references (not copied)
 
