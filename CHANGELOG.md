@@ -4,6 +4,11 @@ Licensed under the MIT License.
 -->
 # Changelog
 
+## 0.2.3
+
+- Documentation: `engine_benchmark` forces the output length through the
+  `force_generation_tokens` scenario option, which the harness must set.
+
 ## 0.2.2
 
 - `scripts/vlm_benchmark.py`: remove the early return after the first token.

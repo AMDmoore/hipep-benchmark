@@ -40,7 +40,7 @@ decode statistics have N - 1 samples. These are two different quantities.
 | `model_benchmark` | Sets `min_length` to prompt length + N, so end-of-sequence is suppressed |
 | `benchmark_multimodal.py` | Sets `min_length` to `max_length`, so end-of-sequence is suppressed |
 | `scripts/vlm_benchmark.py` | Sets `min_length` to prompt length + `max_tokens` (warmup included), fails before the run if that exceeds `max_length`, and fails a run that generated a different number of tokens than `max_tokens`. |
-| `engine_benchmark` | Fails the whole case when a turn finishes early, unless `ENGINE_BENCH_MIN_TOKENS=1`, which sets a minimum generated-token count on every turn |
+| `engine_benchmark` | Fails the whole case when a turn finishes early. With `"force_generation_tokens": true` in the scenario config, every turn sets a minimum of `generation_tokens` generated tokens, so end-of-sequence is suppressed. The option is off by default; the harness must set it. A backend that cannot support a per-turn minimum rejects the turn. |
 
 ## Generated text output
 
