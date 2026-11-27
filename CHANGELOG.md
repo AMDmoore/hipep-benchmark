@@ -4,6 +4,15 @@ Licensed under the MIT License.
 -->
 # Changelog
 
+## 0.2.1
+
+- `scripts/vlm_benchmark.py`: the measured iterations no longer read back or
+  decode generated tokens. With `-v` the generated text is printed by the first
+  warmup iteration only, as `model_benchmark` does; with `-w 0` nothing is
+  printed. `run_single_benchmark` now returns only the `BenchmarkResult`.
+- Reported numbers are unchanged: the removed readback ran outside the timed
+  intervals, but it added host work between decode steps when `-v` was set.
+
 ## 0.2.0
 
 - `scripts/vlm_benchmark.py`: every run, warmup included, now sets

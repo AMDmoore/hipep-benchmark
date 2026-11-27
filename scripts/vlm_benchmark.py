@@ -343,16 +343,13 @@ def run_single_benchmark(
     max_tokens: int,
     max_length: int,
     tokenizer: Optional[og.Tokenizer] = None,
-    verbose: bool = False,
-) -> tuple:
+) -> "BenchmarkResult":
     """Run a single benchmark iteration and collect timing metrics.
 
-    Returns:
-        tuple: (BenchmarkResult, generated_text) where generated_text is only
-               populated if verbose=True
+    Nothing is read back from the generator besides the timing: the generated
+    text is printed by the warmup run, which uses the same prompt and parameters.
     """
     result = BenchmarkResult()
-    generated_tokens = []
 
     # Measure preprocessing time (multimodal processor call)
     preprocess_start = time.perf_counter()
@@ -379,9 +376,6 @@ def run_single_benchmark(
 
     generator = og.Generator(model, params)
 
-    # Create stream for decoding tokens if verbose
-    stream = processor.create_stream() if verbose else None
-
     # Measure TTFT: includes set_inputs (prefill) + first token generation
     ttft_start = time.perf_counter()
     generator.set_inputs(inputs)
@@ -390,16 +384,10 @@ def run_single_benchmark(
     result.ttft_ms = (ttft_end - ttft_start) * 1000
     result.total_tokens_generated = 1
 
-    # Capture first token
-    if verbose:
-        first_token = generator.get_next_tokens()[0]
-        generated_tokens.append(stream.decode(first_token))
-
     if generator.is_done():
         del generator
         require_full_generation(result, max_tokens)
-        generated_text = "".join(generated_tokens) if verbose else ""
-        return result, generated_text
+        return result
 
     # Measure subsequent token generation times
     while not generator.is_done() and result.total_tokens_generated < max_tokens:
@@ -409,15 +397,9 @@ def run_single_benchmark(
         result.token_gen_times_ms.append((token_end - token_start) * 1000)
         result.total_tokens_generated += 1
 
-        # Capture token for verbose output
-        if verbose:
-            new_token = generator.get_next_tokens()[0]
-            generated_tokens.append(stream.decode(new_token))
-
     del generator
     require_full_generation(result, max_tokens)
-    generated_text = "".join(generated_tokens) if verbose else ""
-    return result, generated_text
+    return result
 
 
 def run_warmup(
@@ -746,7 +728,7 @@ def run_benchmark(args: argparse.Namespace):
         if args.verbose:
             print(f"  Iteration {i + 1}/{args.num_iterations}...", end=" ")
 
-        result, generated_text = run_single_benchmark(
+        result = run_single_benchmark(
             model=model,
             processor=processor,
             prompt=prompt,
@@ -754,7 +736,6 @@ def run_benchmark(args: argparse.Namespace):
             max_tokens=args.max_tokens,
             max_length=args.max_length,
             tokenizer=tokenizer,
-            verbose=args.verbose,
         )
         results.append(result)
 
@@ -772,12 +753,6 @@ def run_benchmark(args: argparse.Namespace):
                 f"TTFT: {result.ttft_ms:.1f}ms, "
                 f"Tokens: {result.total_tokens_generated}"
             )
-            # Print generated text on first iteration
-            if i == 0 and generated_text:
-                print(f"\n  Generated output:\n  {'-'*50}")
-                print(f"  {generated_text}")
-                print(f"  {'-'*50}\n")
-
     # Get peak memory usage
     peak_memory_bytes = get_peak_memory_bytes()
 

@@ -42,6 +42,19 @@ decode statistics have N - 1 samples. These are two different quantities.
 | `scripts/vlm_benchmark.py` | Sets `min_length` to prompt length + `max_tokens` (warmup included), fails before the run if that exceeds `max_length`, and fails a run that generated a different number of tokens than `max_tokens`. |
 | `engine_benchmark` | Fails the whole case when a turn finishes early, unless `ENGINE_BENCH_MIN_TOKENS=1`, which sets a minimum generated-token count on every turn |
 
+## Generated text output
+
+Warmup and measured runs use the same prompt and parameters, so the text is
+printed once, by the first warmup run, and the measured loop does nothing but
+step the generator.
+
+| Tool | Text readback in the measured loop |
+|---|---|
+| `model_benchmark` | None. With verbose, the first warmup iteration decodes the finished sequence once. |
+| `benchmark_multimodal.py` | `get_next_tokens()` is called inside the timed interval of every decode step. |
+| `scripts/vlm_benchmark.py` | None. With verbose, the first warmup iteration streams the text. |
+| `engine_benchmark` | Token events are consumed by the loop that measures them; the text is not decoded. |
+
 ## Time to first token
 
 The start of the TTFT interval differs between tools. TTFT values are not
