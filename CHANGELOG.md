@@ -4,6 +4,13 @@ Licensed under the MIT License.
 -->
 # Changelog
 
+## 0.2.2
+
+- `scripts/vlm_benchmark.py`: remove the early return after the first token.
+  The decode loop already does not run when the generator is done, and the
+  generated-token check after the loop fails the run in the same way. Behavior
+  is unchanged.
+
 ## 0.2.1
 
 - `scripts/vlm_benchmark.py`: the measured iterations no longer read back or

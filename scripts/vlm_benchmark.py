@@ -384,11 +384,6 @@ def run_single_benchmark(
     result.ttft_ms = (ttft_end - ttft_start) * 1000
     result.total_tokens_generated = 1
 
-    if generator.is_done():
-        del generator
-        require_full_generation(result, max_tokens)
-        return result
-
     # Measure subsequent token generation times
     while not generator.is_done() and result.total_tokens_generated < max_tokens:
         token_start = time.perf_counter()
